@@ -391,7 +391,7 @@ footer{background:var(--navy3);border-top:1px solid rgba(212,168,67,0.15);paddin
         <label>Capacidade de investimento mensal</label>
         <select name="capacidadeInvestimento" required>
           <option value="">Selecione uma opção</option>
-          <option value="Até R$2.000">Até R$2.000</option>
+          <option value="De R$1.000 a R$2.000">De R$1.000 a R$2.000</option>
           <option value="De R$2.000 a R$3.000">De R$2.000 a R$3.000</option>
           <option value="De R$3.000 a R$5.000">De R$3.000 a R$5.000</option>
           <option value="Acima de R$5.000">Acima de R$5.000</option>
@@ -495,6 +495,9 @@ footer{background:var(--navy3);border-top:1px solid rgba(212,168,67,0.15);paddin
 <script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.19/js/intlTelInput.min.js"></script>
 <script src="https://unpkg.com/libphonenumber-js@1.10.60/bundle/libphonenumber-js.min.js"></script>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.19/js/intlTelInput.min.js"></script>
+<script src="https://unpkg.com/libphonenumber-js@1.10.60/bundle/libphonenumber-js.min.js"></script>
+
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     const telefoneInput = document.querySelector('#telefone');
@@ -529,6 +532,30 @@ footer{background:var(--navy3);border-top:1px solid rgba(212,168,67,0.15);paddin
         telefoneInput.value = formatter.input(apenasNumeros);
       } else {
         telefoneInput.value = apenasNumeros;
+      }
+    }
+
+    function dispararEventoPixelPorInvestimento(capacidadeInvestimento) {
+      if (typeof fbq !== 'function') {
+        return;
+      }
+
+      fbq('track', 'Lead');
+
+      const eventosPorInvestimento = {
+        'De R$1.000 a R$2.000': 'Lead Low WordP',
+        'De R$2.000 a R$3.000': 'Lead Medium WordP',
+        'De R$3.000 a R$5.000': 'Lead High WordP',
+        'Acima de R$5.000': 'Lead Very High WordP'
+      };
+
+      const nomeEvento = eventosPorInvestimento[capacidadeInvestimento];
+
+      if (nomeEvento) {
+        fbq('trackCustom', nomeEvento, {
+          capacidadeInvestimento: capacidadeInvestimento,
+          produto: 'Consórcio Exterior'
+        });
       }
     }
 
@@ -571,6 +598,10 @@ footer{background:var(--navy3);border-top:1px solid rgba(212,168,67,0.15);paddin
       const paisSelecionado = iti.getSelectedCountryData();
       const paisIso2 = paisSelecionado.iso2 ? paisSelecionado.iso2.toUpperCase() : 'BR';
 
+      const capacidadeInvestimento = form.elements['capacidadeInvestimento']
+              ? form.elements['capacidadeInvestimento'].value
+              : '';
+
       let telefoneCompleto = telefoneInput.value;
 
       if (telefoneInput.value.trim() && window.libphonenumber) {
@@ -590,10 +621,12 @@ footer{background:var(--navy3);border-top:1px solid rgba(212,168,67,0.15);paddin
         }
       }
 
+      dispararEventoPixelPorInvestimento(capacidadeInvestimento);
+
       const payload = {
         nome: form.elements['nome'] ? form.elements['nome'].value : '',
         telefone: telefoneCompleto,
-        capacidadeInvestimento: form.elements['capacidadeInvestimento'] ? form.elements['capacidadeInvestimento'].value : '',
+        capacidadeInvestimento: capacidadeInvestimento,
 
         produto: 'Consórcio Exterior',
 
@@ -615,13 +648,8 @@ footer{background:var(--navy3);border-top:1px solid rgba(212,168,67,0.15);paddin
 
         trafficSource: urlParams.utm_source ? 'Paid' : 'Organic',
         first_traffic_source: urlParams.utm_source ? 'Paid' : 'Organic',
-
         pagina: window.location.href
       };
-
-      if (typeof fbq === 'function') {
-        fbq('track', 'Lead');
-      }
 
       try {
         await fetch(webhookUrl, {
